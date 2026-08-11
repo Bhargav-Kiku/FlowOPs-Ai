@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: flowops-ai-backend
+    env: node
+    plan: free
+    region: ohio # Default US region, change to 'frankfurt' or 'singapore' if needed
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GROQ_API_KEY
+        sync: false # Requires you to manually set this in the Render dashboard
+      - key: FLOWOPS_API_KEY
+        sync: false # Requires you to manually set this in the Render dashboard
