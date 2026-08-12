@@ -42,7 +42,7 @@ Output a single integer 1–4 representing operational dispatch priority:
 - 4 = Low      (respond today — minor preference or non-urgent request)
 
 ## Service Subtype (per intent)
-Every intent object MUST include a "subtype" field — the most specific service type for that particular intent.
+Every intent object MUST include a "service_subtype" field — the most specific service type for that particular intent.
 Choose the best-matching subtype from the lists below for each detected intent independently.
 
 ### Engineering subtypes (use for each "engineering" intent)
