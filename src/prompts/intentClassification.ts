@@ -41,11 +41,11 @@ Output a single integer 1–4 representing operational dispatch priority:
 - 3 = Medium   (respond within a few hours — noticeable inconvenience)
 - 4 = Low      (respond today — minor preference or non-urgent request)
 
-## Service Subtype
-You MUST include exactly one "service_subtype" field that identifies the most specific type of service needed.
-Choose the single best-matching subtype from the lists below:
+## Service Subtype (per intent)
+Every intent object MUST include a "subtype" field — the most specific service type for that particular intent.
+Choose the best-matching subtype from the lists below for each detected intent independently.
 
-### Engineering subtypes (use when primary intent is "engineering")
+### Engineering subtypes (use for each "engineering" intent)
 - "hvac"              — air conditioning, heating, ventilation problems
 - "plumbing"          — water, pipes, drains, toilets, showers
 - "electrical"        — lights, power outlets, switches, electrical faults
@@ -53,7 +53,7 @@ Choose the single best-matching subtype from the lists below:
 - "networking"        — Wi-Fi, internet connectivity, in-room network issues
 - "other_engineering" — engineering issues not covered above
 
-### Housekeeping subtypes (use when primary intent is "housekeeping")
+### Housekeeping subtypes (use for each "housekeeping" intent)
 - "cleaning"          — room cleaning, vacuuming, surface wiping
 - "turn_down"         — evening turndown service
 - "delivery"          — delivery of towels, linens, toiletries, amenities
@@ -61,24 +61,23 @@ Choose the single best-matching subtype from the lists below:
 - "laundry"           — laundry, dry-cleaning, ironing requests
 - "other_housekeeping"— housekeeping tasks not covered above
 
-### General / cross-department
-- "general"           — request spans multiple departments or does not fit any specific subtype above
+### General / vendor / guest_services / other subtypes
+- "general"           — use for vendor, guest_services, or other intents where no specific subtype above fits
 
 ## Output Format
 Return ONLY a valid JSON object with this exact structure:
 {
   "intents": [
-    { "intent": "<one of the valid categories>", "confidence": <0.0-1.0> }
+    { "intent": "<one of the valid categories>", "confidence": <0.0-1.0>, "service_subtype": "<subtype for this intent>" }
   ],
   "urgency": "<low|medium|high|critical>",
   "sentiment": <1|2|3|4|5>,
   "priority": <1|2|3|4>,
-  "summary": "<concise 1-2 sentence summary of the request>",
-  "service_subtype": "<one of the valid subtypes listed above>"
+  "summary": "<concise 1-2 sentence summary of the request>"
 }
 
 ## Critical Rules
-- ALWAYS include "service_subtype", "sentiment", and "priority" — all are required
+- ALWAYS include "subtype" on EVERY intent object — it is required for each one
 - "sentiment" and "priority" MUST be plain integers, not strings
 - NEVER include sys_id, record IDs, or database references
 - NEVER claim to have created, assigned, or updated anything

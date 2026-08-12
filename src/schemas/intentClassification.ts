@@ -68,6 +68,7 @@ export const IntentClassificationOutputSchema = z.object({
       z.object({
         intent: z.enum(VALID_INTENTS),
         confidence: z.number().min(0).max(1),
+        service_subtype: z.enum(SERVICE_SUBTYPES as unknown as [string, ...string[]]),
       })
     )
     .min(1),
@@ -86,7 +87,6 @@ export const IntentClassificationOutputSchema = z.object({
     z.literal(4),
   ]),
   summary: z.string().min(1),
-  service_subtype: z.enum(SERVICE_SUBTYPES as unknown as [string, ...string[]]),
 });
 
 export type IntentClassificationInput = z.infer<typeof IntentClassificationInputSchema>;
