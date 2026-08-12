@@ -3,7 +3,7 @@ import { callGroq } from "../lib/groqClient";
 import { applyResponseGuard } from "../lib/responseGuard";
 import { logger } from "../lib/logger";
 import { asyncRoute } from "../lib/asyncRoute";
-import { housekeepingAssignSystemPrompt } from "../prompts/housekeepingAssign";
+import { buildStaffAssignSystemPrompt } from "../prompts/housekeepingAssign";
 import {
   HousekeepingAssignInputSchema,
   HousekeepingAssignOutputSchema,
@@ -29,7 +29,7 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
 
   // ── Groq call ──────────────────────────────────────────────────────────────
   const { data, usage, model, retried } = await callGroq({
-    systemPrompt: housekeepingAssignSystemPrompt,
+    systemPrompt: buildStaffAssignSystemPrompt(input.domain, input.task_type),
     userContent: JSON.stringify(input),
     schema: HousekeepingAssignOutputSchema,
     endpoint: "housekeeping-assign",

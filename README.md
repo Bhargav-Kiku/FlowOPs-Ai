@@ -122,8 +122,9 @@ curl -X POST http://localhost:3000/api/v1/intent-classification \
 
 ### 2. `POST /api/v1/housekeeping-assign`
 
-Recommends the best housekeeping staff member using priority logic: on_shift → same_property → skill → lowest workload.
+Recommends the best staff member using priority logic: on_shift → same_property → skill → lowest workload. While originally for housekeeping, this endpoint supports both `housekeeping` and `engineering` domains.
 
+**Example 1: Housekeeping (Default)**
 ```bash
 curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
   -H "Content-Type: application/json" \
@@ -159,6 +160,48 @@ curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
 {
   "recommended_staff_id": "HK-101",
   "reason": "Sarah Ahmed meets all criteria and has the lowest current workload (3 rooms vs 6).",
+  "confidence": 0.95,
+  "ai_role": "recommendation_only"
+}
+```
+
+**Example 2: Engineering**
+```bash
+curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
+  -H "Content-Type: application/json" \
+  -H "x-flowops-api-key: YOUR_API_KEY" \
+  -d '{
+    "domain": "engineering",
+    "guest_case_id": "CASE-2024-002",
+    "room": "412",
+    "property": "Grand Hotel Dubai",
+    "task_type": "hvac_repair",
+    "candidates": [
+      {
+        "staff_id": "ENG-201",
+        "name": "Mike Johnson",
+        "on_shift": true,
+        "same_property": true,
+        "has_required_skill": true,
+        "current_room_count": 1
+      },
+      {
+        "staff_id": "ENG-202",
+        "name": "David Smith",
+        "on_shift": true,
+        "same_property": true,
+        "has_required_skill": false,
+        "current_room_count": 0
+      }
+    ]
+  }'
+```
+
+**Response:**
+```json
+{
+  "recommended_staff_id": "ENG-201",
+  "reason": "Mike Johnson is on shift, at the same property, and has the required hvac_repair skill.",
   "confidence": 0.95,
   "ai_role": "recommendation_only"
 }

@@ -10,6 +10,7 @@ export const StaffCandidateSchema = z.object({
 });
 
 export const HousekeepingAssignInputSchema = z.object({
+  domain: z.enum(['housekeeping', 'engineering']).optional().default('housekeeping'),
   guest_case_id: z.string().min(1),
   room: z.string().min(1),
   property: z.string().min(1),
