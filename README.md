@@ -158,7 +158,7 @@ curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
 **Response:**
 ```json
 {
-  "recommended_staff_id": "HK-101",
+  "recommended_index": 0,
   "reason": "Sarah Ahmed meets all criteria and has the lowest current workload (3 rooms vs 6).",
   "confidence": 0.95,
   "ai_role": "recommendation_only"
@@ -200,14 +200,14 @@ curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
 **Response:**
 ```json
 {
-  "recommended_staff_id": "ENG-201",
+  "recommended_index": 0,
   "reason": "Mike Johnson is on shift, at the same property, and has the required hvac_repair skill.",
   "confidence": 0.95,
   "ai_role": "recommendation_only"
 }
 ```
 
-> **Note:** If no candidate satisfies `on_shift + same_property + has_required_skill`, `recommended_staff_id` will be `null`. The backend also enforces this in code — AI cannot bypass it.
+> **Note:** If no candidate satisfies `on_shift + same_property + has_required_skill`, `recommended_index` will be `null`. The backend also enforces this in code — AI cannot bypass it.
 
 ---
 

@@ -39,35 +39,33 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
   // ── Priority logic enforcement (code-level, not just prompt-level) ─────────
   let enforcedData: HousekeepingAssignOutput = data;
 
-  if (data.recommended_staff_id !== null) {
-    const pickedCandidate = input.candidates.find(
-      (c) => c.staff_id === data.recommended_staff_id
-    );
+  if (data.recommended_index !== null) {
+    const pickedCandidate = input.candidates[data.recommended_index];
 
     if (!pickedCandidate) {
       logger.warn(
-        { requestId, recommended_staff_id: data.recommended_staff_id },
-        "housekeeping-assign: AI recommended a staff_id not in the candidates list — overriding to null"
+        { requestId, recommended_index: data.recommended_index },
+        "housekeeping-assign: AI recommended an index not in the candidates list — overriding to null"
       );
       enforcedData = {
-        recommended_staff_id: null,
-        reason: "AI recommendation could not be validated: the recommended staff ID was not in the provided candidates list.",
+        recommended_index: null,
+        reason: "AI recommendation could not be validated: the recommended index was out of bounds.",
         confidence: 0,
       };
     } else if (!pickedCandidate.on_shift) {
       logger.warn(
-        { requestId, staff_id: data.recommended_staff_id },
+        { requestId, recommended_index: data.recommended_index },
         "housekeeping-assign: AI recommended an off-shift staff member — overriding to null"
       );
       enforcedData = {
-        recommended_staff_id: null,
+        recommended_index: null,
         reason: `AI attempted to recommend ${pickedCandidate.name} who is not currently on shift. No on-shift candidate with the required qualifications was available.`,
         confidence: 0,
       };
     } else if (!pickedCandidate.same_property) {
       // Allowed but log a warning — off-property is a degraded recommendation
       logger.warn(
-        { requestId, staff_id: data.recommended_staff_id },
+        { requestId, recommended_index: data.recommended_index },
         "housekeeping-assign: AI recommended staff from a different property — allowed but flagged"
       );
     }

@@ -19,7 +19,7 @@ export const HousekeepingAssignInputSchema = z.object({
 });
 
 export const HousekeepingAssignOutputSchema = z.object({
-  recommended_staff_id: z.string().nullable(),
+  recommended_index: z.number().int().nullable(),
   reason: z.string().min(1),
   confidence: z.number().min(0).max(1),
 });
