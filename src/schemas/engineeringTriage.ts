@@ -15,7 +15,7 @@ export const EngineeringTriageOutputSchema = z.object({
   severity: z.enum(["low", "medium", "high", "critical"]),
   recommended_action: z.enum(["repair", "replace", "inspect"]),
   confidence: z.number().min(0).max(1),
-  suggested_priority: z.enum(["low", "medium", "high"]),
+  suggested_priority: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 
 export type EngineeringTriageInput = z.infer<typeof EngineeringTriageInputSchema>;

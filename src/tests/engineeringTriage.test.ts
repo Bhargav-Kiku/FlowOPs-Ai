@@ -34,7 +34,7 @@ const VALID_AI_OUTPUT = {
   severity: "high",
   recommended_action: "inspect",
   confidence: 0.82,
-  suggested_priority: "high",
+  suggested_priority: 2,
 };
 
 describe("POST /api/v1/engineering-triage", () => {
@@ -55,6 +55,7 @@ describe("POST /api/v1/engineering-triage", () => {
     expect(res.body.problem_category).toBeDefined();
     expect(["low", "medium", "high", "critical"]).toContain(res.body.severity);
     expect(["repair", "replace", "inspect"]).toContain(res.body.recommended_action);
+    expect([1, 2, 3, 4]).toContain(res.body.suggested_priority);
     expect(res.body.confidence).toBeGreaterThanOrEqual(0);
     expect(res.body.confidence).toBeLessThanOrEqual(1);
     expect(res.body.ai_role).toBe("recommendation_only");

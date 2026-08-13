@@ -23,9 +23,10 @@ Consider all provided context when forming your assessment:
 - "inspect" — insufficient information to determine cause; further diagnosis required before action
 
 ## Priority (for scheduling the work)
-- "high"   — must be addressed within hours (critical or high severity, or guest complaint pending)
-- "medium" — address within the same day or next shift
-- "low"    — can be scheduled in the next maintenance cycle
+- 1 (critical) — immediate hazard, drop everything
+- 2 (high)     — must be addressed within hours (critical or high severity, or guest complaint pending)
+- 3 (medium)   — address within the same day or next shift
+- 4 (low)      — can be scheduled in the next maintenance cycle
 
 ## Output Format
 Return ONLY a valid JSON object with this exact structure:
@@ -34,7 +35,7 @@ Return ONLY a valid JSON object with this exact structure:
   "severity": "<low|medium|high|critical>",
   "recommended_action": "<repair|replace|inspect>",
   "confidence": <0.0-1.0>,
-  "suggested_priority": "<low|medium|high>"
+  "suggested_priority": <1|2|3|4>
 }
 
 ## Critical Rules

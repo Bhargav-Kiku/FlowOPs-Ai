@@ -248,7 +248,7 @@ curl -X POST http://localhost:3000/api/v1/engineering-triage \
   "severity": "high",
   "recommended_action": "replace",
   "confidence": 0.87,
-  "suggested_priority": "high",
+  "suggested_priority": 2,
   "ai_role": "recommendation_only"
 }
 ```
