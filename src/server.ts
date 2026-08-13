@@ -13,6 +13,7 @@ import engineeringTriageRouter from "./routes/engineeringTriage";
 import vendorRecommendationRouter from "./routes/vendorRecommendation";
 import operationsIntelligenceRouter from "./routes/operationsIntelligence";
 import summaryRouter from "./routes/summary";
+import generateEmailBodyRouter from "./routes/generateEmailBody";
 
 // ── App setup ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +70,7 @@ app.use("/api/v1/engineering-triage", engineeringTriageRouter);
 app.use("/api/v1/vendor-recommendation", vendorRecommendationRouter);
 app.use("/api/v1/operations-intelligence", operationsIntelligenceRouter);
 app.use("/api/v1/summary", summaryRouter);
+app.use("/api/v1/generate-email-body", generateEmailBodyRouter);
 
 // ── Health check (no auth required) ───────────────────────────────────────────
 app.get("/health", (_req: Request, res: Response) => {
