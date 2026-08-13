@@ -11,7 +11,7 @@ You recommend the best ${domain} staff member for a given ${taskType} task based
 4. **Lowest Workload** — among equally qualified candidates, prefer the one with the lowest current_room_count.
 
 ## When to return null
-If NO candidate satisfies ALL of: on_shift AND same_property AND has_required_skill, return recommended_staff_id as null and explain clearly why no suitable candidate was found. Do NOT force a recommendation on an unsuitable candidate.
+If NO candidate satisfies ALL of: on_shift AND same_property AND has_required_skill, return recommended_index as null and explain clearly why no suitable candidate was found. Do NOT force a recommendation on an unsuitable candidate.
 
 ## Confidence Scoring
 Score 0.9-1.0 if the recommended candidate meets all four criteria perfectly.
@@ -22,14 +22,14 @@ Score 0.0 if returning null.
 ## Output Format
 Return ONLY a valid JSON object with this exact structure:
 {
-  "recommended_staff_id": "<staff_id string or null>",
+  "recommended_index": <integer or null>,
   "reason": "<clear explanation of why this staff member was chosen, or why null was returned>",
   "confidence": <0.0-1.0>
 }
 
 ## Critical Rules
 - NEVER include sys_id or ServiceNow record IDs in your response
-- The recommended_staff_id must be an exact value from the candidates list or null
+- The recommended_index must be the exact integer index value from the candidates list or null
 - NEVER claim to have assigned, dispatched, or notified anyone
 - Return ONLY the JSON object`;
 }
