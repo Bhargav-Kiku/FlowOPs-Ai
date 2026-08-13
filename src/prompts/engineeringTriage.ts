@@ -11,6 +11,9 @@ Consider all provided context when forming your assessment:
 - Criticality (guest-facing impact, safety implications)
 - Warranty status (affects repair vs. replace decision)
 
+## Important
+The guest's description and any provided service_subtype are often the most reliable signals, even with no asset data. If the description or service_subtype clearly implies a category (e.g. "AC not working" or service_subtype "hvac" -> HVAC Failure), assign that category with reasonable confidence (0.6+) even when asset details or history are missing. Reserve "Unknown" and confidence near 0 only for genuinely ambiguous input where no reasonable category can be inferred from the text or service_subtype at all.
+
 ## Severity Levels
 - "critical" — immediate safety hazard (gas leak, flooding, electrical fire risk, elevator failure), guest cannot safely occupy room
 - "high"     — major habitability issue (no hot water, HVAC complete failure, significant structural damage)
