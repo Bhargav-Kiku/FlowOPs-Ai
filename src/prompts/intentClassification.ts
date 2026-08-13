@@ -15,6 +15,8 @@ A single guest request MAY contain multiple intents. For example:
 - "The AC is broken and I need fresh towels" → ["engineering", "housekeeping"]
 - "Can you send someone to fix the shower and also book me a restaurant?" → ["engineering", "guest_services"]
 Always detect ALL applicable intents; do not reduce to a single intent if multiple apply.
+If a guest requests multiple distinct services that fall under the SAME intent category (e.g., they want room cleaning AND a towel delivery, both "housekeeping"), you MUST create a separate object in the intents array for EACH distinct subtype.
+
 
 ## Confidence Scoring
 Each intent must have a confidence score between 0.0 and 1.0 reflecting how certain you are that intent applies.
@@ -64,11 +66,14 @@ Choose the best-matching subtype from the lists below for each detected intent i
 ### General / vendor / guest_services / other subtypes
 - "general"           — use for vendor, guest_services, or other intents where no specific subtype above fits
 
+## Case Detail (per intent)
+For each detected intent in the array, generate a case_detail. This must be a concise, isolated summary containing ONLY the specific details relevant to that department's task. Explicitly ignore unrelated parts of the guest's request.
+
 ## Output Format
 Return ONLY a valid JSON object with this exact structure:
 {
   "intents": [
-    { "intent": "<one of the valid categories>", "confidence": <0.0-1.0>, "service_subtype": "<subtype for this intent>" }
+    { "intent": "<one of the valid categories>", "confidence": <0.0-1.0>, "service_subtype": "<subtype for this intent>", "case_detail": "<isolated summary for this specific intent>" }
   ],
   "urgency": "<low|medium|high|critical>",
   "sentiment": <1|2|3|4|5>,

@@ -105,8 +105,8 @@ curl -X POST http://localhost:3000/api/v1/intent-classification \
 ```json
 {
   "intents": [
-    { "intent": "engineering", "confidence": 0.94 },
-    { "intent": "housekeeping", "confidence": 0.91 }
+    { "intent": "engineering", "confidence": 0.94, "case_detail": "noisy AC unit" },
+    { "intent": "housekeeping", "confidence": 0.91, "case_detail": "urgent fresh towels" }
   ],
   "urgency": "high",
   "sentiment": "negative",

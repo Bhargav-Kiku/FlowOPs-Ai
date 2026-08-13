@@ -69,6 +69,7 @@ export const IntentClassificationOutputSchema = z.object({
         intent: z.enum(VALID_INTENTS),
         confidence: z.number().min(0).max(1),
         service_subtype: z.enum(SERVICE_SUBTYPES as unknown as [string, ...string[]]),
+        case_detail: z.string().min(1),
       })
     )
     .min(1),

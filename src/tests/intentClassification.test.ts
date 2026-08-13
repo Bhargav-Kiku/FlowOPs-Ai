@@ -28,8 +28,8 @@ const VALID_INPUT = {
 
 const VALID_AI_OUTPUT = {
   intents: [
-    { intent: "engineering", confidence: 0.95, service_subtype: "hvac" },
-    { intent: "housekeeping", confidence: 0.9, service_subtype: "delivery" },
+    { intent: "engineering", confidence: 0.95, service_subtype: "hvac", case_detail: "broken AC" },
+    { intent: "housekeeping", confidence: 0.9, service_subtype: "delivery", case_detail: "fresh towels" },
   ],
   urgency: "high",
   sentiment: 4,
@@ -58,7 +58,9 @@ describe("POST /api/v1/intent-classification", () => {
     expect(res.body.priority).toBe(2);
     expect(res.body.summary).toBeDefined();
     expect(res.body.intents[0].service_subtype).toBe("hvac");
+    expect(res.body.intents[0].case_detail).toBe("broken AC");
     expect(res.body.intents[1].service_subtype).toBe("delivery");
+    expect(res.body.intents[1].case_detail).toBe("fresh towels");
     expect(res.body.ai_role).toBe("recommendation_only");
   });
 
@@ -180,7 +182,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns engineering subtype 'hvac' for AC-related requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "engineering", confidence: 0.97, service_subtype: "hvac" }],
+      intents: [{ intent: "engineering", confidence: 0.97, service_subtype: "hvac", case_detail: "AC not cooling" }],
     };
     mockCreate.mockResolvedValueOnce(mockGroqResponse(aiOutput));
 
@@ -196,7 +198,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns engineering subtype 'plumbing' for water-related requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "engineering", confidence: 0.95, service_subtype: "plumbing" }],
+      intents: [{ intent: "engineering", confidence: 0.95, service_subtype: "plumbing", case_detail: "toilet overflowing" }],
     };
     mockCreate.mockResolvedValueOnce(mockGroqResponse(aiOutput));
 
@@ -212,7 +214,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns engineering subtype 'electrical' for power-related requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "engineering", confidence: 0.93, service_subtype: "electrical" }],
+      intents: [{ intent: "engineering", confidence: 0.93, service_subtype: "electrical", case_detail: "lights not working" }],
     };
     mockCreate.mockResolvedValueOnce(mockGroqResponse(aiOutput));
 
@@ -228,7 +230,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns engineering subtype 'networking' for Wi-Fi requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "engineering", confidence: 0.9, service_subtype: "networking" }],
+      intents: [{ intent: "engineering", confidence: 0.9, service_subtype: "networking", case_detail: "wi-fi disconnecting" }],
     };
     mockCreate.mockResolvedValueOnce(mockGroqResponse(aiOutput));
 
@@ -244,7 +246,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns housekeeping subtype 'cleaning' for room cleaning requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "housekeeping", confidence: 0.98, service_subtype: "cleaning" }],
+      intents: [{ intent: "housekeeping", confidence: 0.98, service_subtype: "cleaning", case_detail: "room cleaning" }],
       urgency: "low",
       sentiment: 5,
       priority: 4,
@@ -263,7 +265,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns housekeeping subtype 'delivery' for towel delivery requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "housekeeping", confidence: 0.96, service_subtype: "delivery" }],
+      intents: [{ intent: "housekeeping", confidence: 0.96, service_subtype: "delivery", case_detail: "extra towels" }],
       urgency: "low",
       sentiment: 5,
       priority: 4,
@@ -282,7 +284,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns housekeeping subtype 'laundry' for laundry requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "housekeeping", confidence: 0.94, service_subtype: "laundry" }],
+      intents: [{ intent: "housekeeping", confidence: 0.94, service_subtype: "laundry", case_detail: "dry clean shirts" }],
       urgency: "low",
       sentiment: 5,
       priority: 4,
@@ -301,7 +303,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns housekeeping subtype 'turn_down' for turndown service requests", async () => {
     const aiOutput = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "housekeeping", confidence: 0.92, service_subtype: "turn_down" }],
+      intents: [{ intent: "housekeeping", confidence: 0.92, service_subtype: "turn_down", case_detail: "turndown service" }],
       urgency: "low",
       sentiment: 5,
       priority: 4,
@@ -331,6 +333,29 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     expect(res.body.intents[1].service_subtype).toBe("delivery");
   });
 
+  test("creates separate intent objects for multiple distinct services within the same intent category", async () => {
+    const aiOutput = {
+      ...VALID_AI_OUTPUT,
+      intents: [
+        { intent: "housekeeping", confidence: 0.95, service_subtype: "cleaning", case_detail: "Clean the room" },
+        { intent: "housekeeping", confidence: 0.9, service_subtype: "delivery", case_detail: "Bring extra towels" }
+      ],
+    };
+    mockCreate.mockResolvedValueOnce(mockGroqResponse(aiOutput));
+
+    const res = await request(app)
+      .post("/api/v1/intent-classification")
+      .set(AUTH_HEADER)
+      .send({ request: "Please clean my room and also bring extra towels.", property: "Grand Hotel", room: "402" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.intents).toHaveLength(2);
+    expect(res.body.intents[0].intent).toBe("housekeeping");
+    expect(res.body.intents[0].service_subtype).toBe("cleaning");
+    expect(res.body.intents[1].intent).toBe("housekeeping");
+    expect(res.body.intents[1].service_subtype).toBe("delivery");
+  });
+
   test("returns 422 when AI output is missing subtype on an intent", async () => {
     const outputWithoutSubtype = {
       intents: [{ intent: "engineering", confidence: 0.9 }], // subtype intentionally omitted
@@ -355,7 +380,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
   test("returns 422 when AI output has an invalid subtype value on an intent", async () => {
     const outputWithBadSubtype = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "engineering", confidence: 0.95, service_subtype: "unknown_service" }],
+      intents: [{ intent: "engineering", confidence: 0.95, service_subtype: "unknown_service", case_detail: "broken AC" }],
     };
     mockCreate
       .mockResolvedValueOnce(mockGroqResponse(outputWithBadSubtype))
