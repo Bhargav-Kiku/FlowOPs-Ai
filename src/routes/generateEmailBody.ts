@@ -25,7 +25,7 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
   const input = inputParse.data;
 
   const { data, usage, model, retried } = await callGroq({
-    systemPrompt: buildEmailBodySystemPrompt(input.stage, input.sentiment),
+    systemPrompt: buildEmailBodySystemPrompt(input.stage, input.sentiment, input.assignment_type, input.assigned_name),
     userContent: JSON.stringify({ request_text: input.request_text }),
     schema: GenerateEmailBodyOutputSchema,
     endpoint: "generate-email-body",

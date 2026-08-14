@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { callGroq } from "../lib/groqClient";
 import { applyResponseGuard } from "../lib/responseGuard";
 import { asyncRoute } from "../lib/asyncRoute";
-import { intentClassificationSystemPrompt } from "../prompts/intentClassification";
+import { buildIntentClassificationSystemPrompt } from "../prompts/intentClassification";
 import {
   IntentClassificationInputSchema,
   IntentClassificationOutputSchema,
@@ -23,13 +23,14 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  const { request, property, room } = inputParse.data;
+  const { request, property, room, departments } = inputParse.data;
 
   const userContent = JSON.stringify({ request, property, room });
+  const systemPrompt = buildIntentClassificationSystemPrompt(departments);
 
   // ── Groq call ──────────────────────────────────────────────────────────────
   const { data, usage, model, retried } = await callGroq({
-    systemPrompt: intentClassificationSystemPrompt,
+    systemPrompt,
     userContent,
     schema: IntentClassificationOutputSchema,
     endpoint: "intent-classification",

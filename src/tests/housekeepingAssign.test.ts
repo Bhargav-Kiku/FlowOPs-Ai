@@ -24,9 +24,10 @@ const VALID_INPUT = {
   room: "301",
   property: "Grand Hotel",
   task_type: "linen_change",
+  severity: 1,
   candidates: [
-    { staff_id: "STAFF-A", name: "Alice", on_shift: true, same_property: true, has_required_skill: true, current_room_count: 3 },
-    { staff_id: "STAFF-B", name: "Bob", on_shift: false, same_property: true, has_required_skill: true, current_room_count: 1 },
+    { index: 0, staff_id: "STAFF-A", name: "Alice", on_shift: true, same_property: true, has_required_skill: true, current_room_count: 3 },
+    { index: 1, staff_id: "STAFF-B", name: "Bob", on_shift: false, same_property: true, has_required_skill: true, current_room_count: 1 },
   ],
 };
 
@@ -51,7 +52,7 @@ describe("POST /api/v1/housekeeping-assign", () => {
     expect(res.body.ai_role).toBe("recommendation_only");
   });
 
-  test("overrides AI pick to null when AI recommends an off-shift staff member", async () => {
+  test("overrides AI pick to -1 when AI recommends an off-shift staff member", async () => {
     mockCreate.mockResolvedValueOnce(
       mockGroqResponse({ recommended_index: 1, reason: "Bob has lowest workload", confidence: 0.7 })
     );
@@ -62,13 +63,13 @@ describe("POST /api/v1/housekeeping-assign", () => {
       .send(VALID_INPUT);
 
     expect(res.status).toBe(200);
-    expect(res.body.recommended_index).toBeNull();
+    expect(res.body.recommended_index).toBe(-1);
     expect(res.body.confidence).toBe(0);
     expect(res.body.ai_role).toBe("recommendation_only");
   });
 
-  test("returns null when AI returns null (no suitable candidate)", async () => {
-    mockCreate.mockResolvedValueOnce(
+  test("returns 422 when AI returns null (violates non-nullable schema)", async () => {
+    mockCreate.mockResolvedValue(
       mockGroqResponse({ recommended_index: null, reason: "No on-shift staff with required skill", confidence: 0 })
     );
 
@@ -77,11 +78,10 @@ describe("POST /api/v1/housekeeping-assign", () => {
       .set(AUTH_HEADER)
       .send(VALID_INPUT);
 
-    expect(res.status).toBe(200);
-    expect(res.body.recommended_index).toBeNull();
+    expect(res.status).toBe(422);
   });
 
-  test("overrides to null when AI returns a staff_id not in candidates list", async () => {
+  test("overrides to -1 when AI returns an index not in candidates list", async () => {
     mockCreate.mockResolvedValueOnce(
       mockGroqResponse({ recommended_index: 99, reason: "Hallucinated staff", confidence: 0.9 })
     );
@@ -92,7 +92,7 @@ describe("POST /api/v1/housekeeping-assign", () => {
       .send(VALID_INPUT);
 
     expect(res.status).toBe(200);
-    expect(res.body.recommended_index).toBeNull();
+    expect(res.body.recommended_index).toBe(-1);
   });
 
   test("returns 400 for missing candidates", async () => {

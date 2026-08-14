@@ -21,18 +21,20 @@ function mockGroqResponse(content: unknown) {
 
 const VALID_INPUT = {
   guest_case_id: "CASE-002",
+  service_subtype: "hvac",
+  priority: 1,
+  description: "AC is completely broken and leaking water",
   room: "510",
-  asset: { type: "HVAC", model: "Carrier-2020", last_maintenance: "2024-01-15" },
-  asset_history: [{ event: "filter_replaced", date: "2024-01-15" }],
-  previous_work_orders: [{ issue: "refrigerant_leak", resolved: true, date: "2023-06-10" }],
-  criticality: "high",
-  warranty_status: "expired",
+  property: "Grand Hotel",
+  assets: [
+    { asset_name: "AC Unit 1", asset_type: "HVAC", status: "active", criticality: "high" }
+  ]
 };
 
 const VALID_AI_OUTPUT = {
   problem_category: "HVAC Failure",
-  severity: "high",
-  recommended_action: "inspect",
+  recommended_action: "Inspect wiring and replace switch",
+  routing_decision: "vendor_direct",
   confidence: 0.82,
   suggested_priority: 2,
 };
@@ -53,8 +55,8 @@ describe("POST /api/v1/engineering-triage", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.problem_category).toBeDefined();
-    expect(["low", "medium", "high", "critical"]).toContain(res.body.severity);
-    expect(["repair", "replace", "inspect"]).toContain(res.body.recommended_action);
+    expect(["internal_only", "vendor_direct", "hybrid"]).toContain(res.body.routing_decision);
+    expect(typeof res.body.recommended_action).toBe("string");
     expect([1, 2, 3, 4]).toContain(res.body.suggested_priority);
     expect(res.body.confidence).toBeGreaterThanOrEqual(0);
     expect(res.body.confidence).toBeLessThanOrEqual(1);
@@ -67,7 +69,7 @@ describe("POST /api/v1/engineering-triage", () => {
     const res = await request(app)
       .post("/api/v1/engineering-triage")
       .set(AUTH_HEADER)
-      .send({ guest_case_id: "CASE-003", room: "201" });
+      .send({ guest_case_id: "CASE-003", service_subtype: "plumbing", priority: 2, description: "broken pipe", room: "201", property: "Grand Hotel" });
 
     expect(res.status).toBe(200);
   });
@@ -90,8 +92,8 @@ describe("POST /api/v1/engineering-triage", () => {
     expect(res.status).toBe(401);
   });
 
-  test("returns 422 if AI returns invalid severity enum after retry", async () => {
-    const badOutput = { ...VALID_AI_OUTPUT, severity: "catastrophic" };
+  test("returns 422 if AI returns invalid routing_decision enum after retry", async () => {
+    const badOutput = { ...VALID_AI_OUTPUT, routing_decision: "unknown_route" };
     mockCreate
       .mockResolvedValueOnce(mockGroqResponse(badOutput))
       .mockResolvedValueOnce(mockGroqResponse(badOutput));

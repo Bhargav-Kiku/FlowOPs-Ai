@@ -97,7 +97,21 @@ curl -X POST http://localhost:3000/api/v1/intent-classification \
   -d '{
     "request": "The AC unit is making a loud noise and I need fresh towels urgently",
     "property": "Grand Hotel Dubai",
-    "room": "402"
+    "room": "402",
+    "departments": [
+      {
+        "department": "engineering",
+        "skills": [
+          { "name": "hvac", "description": "mechanical, electrical, plumbing, HVAC" }
+        ]
+      },
+      {
+        "department": "housekeeping",
+        "skills": [
+          { "name": "cleaning", "description": "cleaning, linens, towels" }
+        ]
+      }
+    ]
   }'
 ```
 
@@ -134,8 +148,10 @@ curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
     "room": "301",
     "property": "Grand Hotel Dubai",
     "task_type": "linen_change",
+    "severity": 1,
     "candidates": [
       {
+        "index": 0,
         "staff_id": "HK-101",
         "name": "Sarah Ahmed",
         "on_shift": true,
@@ -144,6 +160,7 @@ curl -X POST http://localhost:3000/api/v1/housekeeping-assign \
         "current_room_count": 3
       },
       {
+        "index": 1,
         "staff_id": "HK-102",
         "name": "Priya Sharma",
         "on_shift": true,
@@ -221,35 +238,32 @@ curl -X POST http://localhost:3000/api/v1/engineering-triage \
   -H "x-flowops-api-key: YOUR_API_KEY" \
   -d '{
     "guest_case_id": "CASE-2024-002",
+    "service_subtype": "hvac",
+    "priority": 1,
+    "description": "AC unit in room is leaking water and not cooling",
     "room": "510",
-    "asset": {
-      "type": "HVAC",
-      "model": "Carrier-24ACC636A003",
-      "install_date": "2019-03-15",
-      "last_maintenance": "2024-01-10"
-    },
-    "asset_history": [
-      { "event": "refrigerant_recharge", "date": "2022-07-20" },
-      { "event": "filter_replaced", "date": "2024-01-10" }
-    ],
-    "previous_work_orders": [
-      { "issue": "refrigerant_leak", "resolved": true, "date": "2023-06-10" },
-      { "issue": "compressor_noise", "resolved": true, "date": "2023-11-05" }
-    ],
-    "criticality": "high",
-    "warranty_status": "expired"
+    "property": "Grand Hotel Dubai",
+    "assets": [
+      {
+        "asset_name": "AC Unit Carrier",
+        "asset_type": "HVAC",
+        "status": "active",
+        "criticality": "high"
+      }
+    ]
   }'
 ```
 
 **Response:**
 ```json
 {
-  "problem_category": "HVAC Recurring Failure",
-  "severity": "high",
-  "recommended_action": "replace",
-  "confidence": 0.87,
+  "problem_category": "HVAC Failure",
+  "recommended_action": "Inspect wiring and replace switch",
+  "routing_decision": "vendor_direct",
   "suggested_priority": 2,
-  "ai_role": "recommendation_only"
+  "confidence": 0.87,
+  "ai_role": "recommendation_only",
+  "_meta": { "model": "llama-3.3-70b-versatile", "retried": false, "requestId": "..." }
 }
 ```
 
@@ -264,32 +278,34 @@ curl -X POST http://localhost:3000/api/v1/vendor-recommendation \
   -H "Content-Type: application/json" \
   -H "x-flowops-api-key: YOUR_API_KEY" \
   -d '{
-    "service_category": "elevator_maintenance",
+    "guest_case_id": "CASE-2024-002",
+    "task_type": "elevator_maintenance",
+    "severity": 1,
     "property": "Grand Hotel Dubai",
-    "vendors": [
+    "candidates": [
       {
+        "index": 0,
         "vendor_id": "VND-001",
         "name": "Acme Lift Services",
         "rating": 4.5,
-        "sla_percentage": 92,
-        "avg_response_time_hours": 4,
-        "cost_index": 75
+        "sla_response_time_hrs": 4,
+        "contract_status": "Active"
       },
       {
+        "index": 1,
         "vendor_id": "VND-002",
         "name": "QuickFix Elevators",
         "rating": 3.8,
-        "sla_percentage": 78,
-        "avg_response_time_hours": 2,
-        "cost_index": 55
+        "sla_response_time_hrs": 2,
+        "contract_status": "Preferred"
       },
       {
+        "index": 2,
         "vendor_id": "VND-003",
         "name": "Premier Vertical",
         "rating": 4.9,
-        "sla_percentage": 97,
-        "avg_response_time_hours": 6,
-        "cost_index": 95
+        "sla_response_time_hrs": 6,
+        "contract_status": "Emergency Only"
       }
     ]
   }'
@@ -298,10 +314,11 @@ curl -X POST http://localhost:3000/api/v1/vendor-recommendation \
 **Response:**
 ```json
 {
-  "recommended_vendor_id": "VND-001",
-  "reason": "Acme Lift Services offers the best balance: strong SLA (92%) and high rating (4.5) at moderate cost. Premier Vertical has a slightly higher score but the 6-hour response time is a concern for elevator issues.",
+  "recommended_index": 1,
+  "reason": "QuickFix Elevators meets the 2-hour SLA response time for severity 1 issues and has Preferred contract status.",
   "confidence": 0.88,
-  "ai_role": "recommendation_only"
+  "ai_role": "recommendation_only",
+  "_meta": { "model": "llama-3.3-70b-versatile", "retried": false, "requestId": "..." }
 }
 ```
 

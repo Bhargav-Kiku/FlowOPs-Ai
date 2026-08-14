@@ -3,7 +3,9 @@ import { z } from "zod";
 export const GenerateEmailBodyInputSchema = z.object({
   request_text: z.string().min(1),
   sentiment: z.number().int().min(1).max(5),
-  stage: z.enum(['routed', 'open', 'in_progress', 'resolved']),
+  stage: z.enum(['acknowledgement', 'assignment', 'resolution']),
+  assignment_type: z.enum(['internal', 'vendor']).optional(),
+  assigned_name: z.string().optional(),
 });
 
 export const GenerateEmailBodyOutputSchema = z.object({

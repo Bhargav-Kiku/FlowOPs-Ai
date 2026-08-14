@@ -24,6 +24,26 @@ const VALID_INPUT = {
   request: "The AC is broken and I need fresh towels",
   property: "Grand Hotel",
   room: "402",
+  departments: [
+    {
+      department: "engineering",
+      skills: [
+        { name: "hvac", description: "AC repairs" },
+        { name: "plumbing", description: "Water issues" },
+        { name: "electrical", description: "Power issues" },
+        { name: "networking", description: "Wi-Fi issues" }
+      ]
+    },
+    {
+      department: "housekeeping",
+      skills: [
+        { name: "cleaning", description: "Room cleaning" },
+        { name: "delivery", description: "Towels and amenities" },
+        { name: "laundry", description: "Dry cleaning" },
+        { name: "turn_down", description: "Turndown service" }
+      ]
+    }
+  ]
 };
 
 const VALID_AI_OUTPUT = {
@@ -189,7 +209,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "The AC in my room is not cooling at all", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "The AC in my room is not cooling at all" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("hvac");
@@ -205,7 +225,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "The toilet is overflowing", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "The toilet is overflowing" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("plumbing");
@@ -221,7 +241,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "The lights in the bathroom are not working", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "The lights in the bathroom are not working" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("electrical");
@@ -237,7 +257,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "The Wi-Fi in my room keeps disconnecting", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "The Wi-Fi in my room keeps disconnecting" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("networking");
@@ -256,7 +276,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Please clean my room", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Please clean my room" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("cleaning");
@@ -275,7 +295,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Can you send me some extra towels?", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Can you send me some extra towels?" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("delivery");
@@ -294,7 +314,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "I need my shirts dry cleaned", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "I need my shirts dry cleaned" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("laundry");
@@ -313,7 +333,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Can you do turndown service tonight?", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Can you do turndown service tonight?" });
 
     expect(res.status).toBe(200);
     expect(res.body.intents[0].service_subtype).toBe("turn_down");
@@ -346,7 +366,7 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Please clean my room and also bring extra towels.", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Please clean my room and also bring extra towels." });
 
     expect(res.status).toBe(200);
     expect(res.body.intents).toHaveLength(2);
@@ -377,10 +397,11 @@ describe("POST /api/v1/intent-classification â€” service_subtype", () => {
     expect(res.body.error).toBe("invalid_ai_output");
   });
 
-  test("returns 422 when AI output has an invalid subtype value on an intent", async () => {
+  test("returns 422 when AI output is missing required service_subtype on an intent", async () => {
     const outputWithBadSubtype = {
       ...VALID_AI_OUTPUT,
-      intents: [{ intent: "engineering", confidence: 0.95, service_subtype: "unknown_service", case_detail: "broken AC" }],
+      // @ts-ignore
+      intents: [{ intent: "engineering", confidence: 0.95, case_detail: "broken AC" }],
     };
     mockCreate
       .mockResolvedValueOnce(mockGroqResponse(outputWithBadSubtype))
@@ -411,7 +432,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "There is flooding in my bathroom and water is spreading everywhere!", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "There is flooding in my bathroom and water is spreading everywhere!" });
 
     expect(res.status).toBe(200);
     expect(res.body.priority).toBe(1);
@@ -425,7 +446,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "The AC is broken. It is extremely hot in here.", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "The AC is broken. It is extremely hot in here." });
 
     expect(res.status).toBe(200);
     expect(res.body.priority).toBe(2);
@@ -438,7 +459,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "The minibar fridge seems to be making a loud noise.", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "The minibar fridge seems to be making a loud noise." });
 
     expect(res.status).toBe(200);
     expect(res.body.priority).toBe(3);
@@ -451,7 +472,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Could I get an extra pillow when you get a chance?", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Could I get an extra pillow when you get a chance?" });
 
     expect(res.status).toBe(200);
     expect(res.body.priority).toBe(4);
@@ -466,7 +487,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Please help! There is water coming through the ceiling!", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Please help! There is water coming through the ceiling!" });
 
     expect(res.status).toBe(200);
     expect(res.body.sentiment).toBe(1);
@@ -479,7 +500,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Oh great, the AC is broken again. What a surprise.", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Oh great, the AC is broken again. What a surprise." });
 
     expect(res.status).toBe(200);
     expect(res.body.sentiment).toBe(2);
@@ -492,7 +513,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "This is absolutely unacceptable! Fix the AC NOW or I am leaving!", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "This is absolutely unacceptable! Fix the AC NOW or I am leaving!" });
 
     expect(res.status).toBe(200);
     expect(res.body.sentiment).toBe(3);
@@ -518,7 +539,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Can I have some extra towels please?", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Can I have some extra towels please?" });
 
     expect(res.status).toBe(200);
     expect(res.body.sentiment).toBe(5);
@@ -533,7 +554,7 @@ describe("POST /api/v1/intent-classification â€” priority, sentiment & urge
     const res = await request(app)
       .post("/api/v1/intent-classification")
       .set(AUTH_HEADER)
-      .send({ request: "Gas smell in the room, please help immediately!", property: "Grand Hotel", room: "402" });
+      .send({ ...VALID_INPUT, request: "Gas smell in the room, please help immediately!" });
 
     expect(res.status).toBe(200);
     expect(res.body.urgency).toBe("critical");

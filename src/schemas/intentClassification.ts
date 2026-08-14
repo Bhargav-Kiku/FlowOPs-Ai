@@ -4,39 +4,18 @@ export const IntentClassificationInputSchema = z.object({
   request: z.string().min(1, "request is required"),
   property: z.string().min(1, "property is required"),
   room: z.string().min(1, "room is required"),
+  departments: z.array(
+    z.object({
+      department: z.string().min(1),
+      skills: z.array(
+        z.object({
+          name: z.string().min(1),
+          description: z.string().min(1),
+        })
+      ).min(1, "skills must contain at least one skill"),
+    })
+  ).min(1, "departments must contain at least one department"),
 });
-
-export const VALID_INTENTS = ["engineering", "housekeeping", "vendor", "guest_services", "other"] as const;
-
-/** Engineering subtypes */
-export const ENGINEERING_SUBTYPES = [
-  "hvac",
-  "plumbing",
-  "electrical",
-  "furniture",
-  "networking",
-  "other_engineering",
-] as const;
-
-/** Housekeeping subtypes */
-export const HOUSEKEEPING_SUBTYPES = [
-  "cleaning",
-  "turn_down",
-  "delivery",
-  "inspection",
-  "laundry",
-  "other_housekeeping",
-] as const;
-
-/** General / cross-department subtype */
-export const GENERAL_SUBTYPES = ["general"] as const;
-
-/** Union of all valid service subtypes */
-export const SERVICE_SUBTYPES = [
-  ...ENGINEERING_SUBTYPES,
-  ...HOUSEKEEPING_SUBTYPES,
-  ...GENERAL_SUBTYPES,
-] as const;
 
 /**
  * Urgency levels — "critical" is added for life-safety / total habitability failure.
@@ -66,9 +45,9 @@ export const IntentClassificationOutputSchema = z.object({
   intents: z
     .array(
       z.object({
-        intent: z.enum(VALID_INTENTS),
+        intent: z.string().min(1),
         confidence: z.number().min(0).max(1),
-        service_subtype: z.enum(SERVICE_SUBTYPES as unknown as [string, ...string[]]),
+        service_subtype: z.string().min(1),
         case_detail: z.string().min(1),
       })
     )
@@ -92,7 +71,6 @@ export const IntentClassificationOutputSchema = z.object({
 
 export type IntentClassificationInput = z.infer<typeof IntentClassificationInputSchema>;
 export type IntentClassificationOutput = z.infer<typeof IntentClassificationOutputSchema>;
-export type ServiceSubtype = (typeof SERVICE_SUBTYPES)[number];
 export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
 export type SentimentCode = (typeof SENTIMENT_CODES)[number];
 export type PriorityCode = (typeof PRIORITY_CODES)[number];

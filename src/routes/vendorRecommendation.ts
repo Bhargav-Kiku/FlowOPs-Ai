@@ -35,16 +35,16 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
     requestId,
   });
 
-  // ── Validate that recommended vendor_id is from the input list ─────────────
-  const validVendorIds = new Set(input.vendors.map((v) => v.vendor_id));
-  if (!validVendorIds.has(data.recommended_vendor_id)) {
+  // ── Validate that recommended_index is from the input list ─────────────
+  const validIndices = new Set(input.candidates.map((c) => c.index));
+  if (!validIndices.has(data.recommended_index)) {
     logger.warn(
-      { requestId, recommended_vendor_id: data.recommended_vendor_id },
-      "vendor-recommendation: AI returned a vendor_id not in the input list"
+      { requestId, recommended_index: data.recommended_index },
+      "vendor-recommendation: AI returned an index not in the candidates list"
     );
     res.status(422).json({
       error: "invalid_ai_output",
-      detail: "AI returned a vendor_id that was not in the provided vendors list",
+      detail: "AI returned an index that was not in the provided candidates list",
     });
     return;
   }

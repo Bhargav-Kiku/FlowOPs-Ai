@@ -20,18 +20,20 @@ function mockGroqResponse(content: unknown) {
 }
 
 const VALID_INPUT = {
-  service_category: "elevator_maintenance",
+  guest_case_id: "CASE-999",
+  task_type: "elevator_maintenance",
+  severity: 1,
   property: "Grand Hotel",
-  vendors: [
-    { vendor_id: "VND-001", name: "Acme Lifts", rating: 4.5, sla_percentage: 92, avg_response_time_hours: 4, cost_index: 75 },
-    { vendor_id: "VND-002", name: "QuickFix Co", rating: 3.8, sla_percentage: 78, avg_response_time_hours: 2, cost_index: 60 },
-    { vendor_id: "VND-003", name: "Premier Services", rating: 4.8, sla_percentage: 96, avg_response_time_hours: 6, cost_index: 90 },
+  candidates: [
+    { index: 0, vendor_id: "VND-001", name: "Acme Lifts", rating: 4.5, sla_response_time_hrs: 4, contract_status: "Active" },
+    { index: 1, vendor_id: "VND-002", name: "QuickFix Co", rating: 3.8, sla_response_time_hrs: 2, contract_status: "Preferred" },
+    { index: 2, vendor_id: "VND-003", name: "Premier Services", rating: 4.8, sla_response_time_hrs: 6, contract_status: "Emergency Only" },
   ],
 };
 
 const VALID_AI_OUTPUT = {
-  recommended_vendor_id: "VND-001",
-  reason: "Acme Lifts has strong SLA compliance at 92% and high rating of 4.5",
+  recommended_index: 1,
+  reason: "QuickFix Co has a 2hr SLA suitable for severity 1",
   confidence: 0.88,
 };
 
@@ -50,7 +52,7 @@ describe("POST /api/v1/vendor-recommendation", () => {
       .send(VALID_INPUT);
 
     expect(res.status).toBe(200);
-    expect(res.body.recommended_vendor_id).toBe("VND-001");
+    expect(res.body.recommended_index).toBe(1);
     expect(res.body.reason).toBeDefined();
     expect(res.body.confidence).toBeGreaterThanOrEqual(0);
     expect(res.body.ai_role).toBe("recommendation_only");
@@ -58,7 +60,7 @@ describe("POST /api/v1/vendor-recommendation", () => {
 
   test("returns 422 when AI returns a vendor_id not in the input list", async () => {
     mockCreate.mockResolvedValueOnce(
-      mockGroqResponse({ recommended_vendor_id: "VND-FAKE", reason: "Hallucinated vendor", confidence: 0.9 })
+      mockGroqResponse({ recommended_index: 99, reason: "Hallucinated vendor", confidence: 0.9 })
     );
 
     const res = await request(app)
@@ -74,7 +76,7 @@ describe("POST /api/v1/vendor-recommendation", () => {
     const res = await request(app)
       .post("/api/v1/vendor-recommendation")
       .set(AUTH_HEADER)
-      .send({ service_category: "plumbing", property: "Hotel", vendors: [] });
+      .send({ guest_case_id: "case", task_type: "plumbing", severity: 2, property: "Hotel", candidates: [] });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("invalid_input");
