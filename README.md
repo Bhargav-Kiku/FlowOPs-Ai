@@ -20,7 +20,7 @@ FlowOps AI Backend (this service)
         │  ─ Response guard (strips sys_ids, injects ai_role)
         │  ─ Output validation (Zod)
         ▼
-Groq LLM API (llama-3.3-70b-versatile / llama-3.1-8b-instant)
+Groq LLM API (groq/compound / groq/compound-mini)
 ```
 
 ---
@@ -55,8 +55,8 @@ npm start
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `GROQ_API_KEY` | ✅ | — | Your Groq API key |
-| `GROQ_MODEL` | ❌ | `llama-3.3-70b-versatile` | Primary LLM model |
-| `GROQ_FAST_MODEL` | ❌ | `llama-3.1-8b-instant` | Fast model for `/summary` |
+| `GROQ_MODEL` | ❌ | `groq/compound` | Primary LLM model |
+| `GROQ_FAST_MODEL` | ❌ | `groq/compound-mini` | Fast model for `/summary` |
 | `FLOWOPS_API_KEY` | ✅ | — | Shared secret for ServiceNow auth |
 | `PORT` | ❌ | `3000` | Server listen port |
 | `NODE_ENV` | ❌ | `development` | Node environment |
@@ -126,7 +126,7 @@ curl -X POST http://localhost:3000/api/v1/intent-classification \
   "sentiment": "negative",
   "summary": "Guest in room 402 reports a noisy AC unit and urgently needs fresh towels.",
   "ai_role": "recommendation_only",
-  "_meta": { "model": "llama-3.3-70b-versatile", "retried": false, "requestId": "..." }
+  "_meta": { "model": "groq/compound", "retried": false, "requestId": "..." }
 }
 ```
 
@@ -263,7 +263,7 @@ curl -X POST http://localhost:3000/api/v1/engineering-triage \
   "suggested_priority": 2,
   "confidence": 0.87,
   "ai_role": "recommendation_only",
-  "_meta": { "model": "llama-3.3-70b-versatile", "retried": false, "requestId": "..." }
+  "_meta": { "model": "groq/compound", "retried": false, "requestId": "..." }
 }
 ```
 
@@ -318,7 +318,7 @@ curl -X POST http://localhost:3000/api/v1/vendor-recommendation \
   "reason": "QuickFix Elevators meets the 2-hour SLA response time for severity 1 issues and has Preferred contract status.",
   "confidence": 0.88,
   "ai_role": "recommendation_only",
-  "_meta": { "model": "llama-3.3-70b-versatile", "retried": false, "requestId": "..." }
+  "_meta": { "model": "groq/compound", "retried": false, "requestId": "..." }
 }
 ```
 
@@ -382,7 +382,7 @@ curl -X POST http://localhost:3000/api/v1/operations-intelligence \
 
 ### 6. `POST /api/v1/summary`
 
-Generates a concise 2-4 sentence summary of any hotel operations context. Uses the fast model (`llama-3.1-8b-instant`) for low latency.
+Generates a concise 2-4 sentence summary of any hotel operations context. Uses the fast model (`groq/compound-mini`) for low latency.
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/summary \
@@ -406,7 +406,7 @@ curl -X POST http://localhost:3000/api/v1/summary \
 {
   "summary": "Guest James Wilson in room 712 has reported that the AC unit is not cooling, with room temperature at 29°C. An additional request for extra towels was submitted alongside the engineering complaint. The case was opened on August 1st and is currently unresolved.",
   "ai_role": "recommendation_only",
-  "_meta": { "model": "llama-3.1-8b-instant", "retried": false }
+  "_meta": { "model": "groq/compound-mini", "retried": false }
 }
 ```
 

@@ -45,8 +45,8 @@ export function _resetClientForTesting(): void {
 
 // ── Model selection ───────────────────────────────────────────────────────────
 
-export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile";
-export const FAST_MODEL = process.env.GROQ_FAST_MODEL ?? "llama-3.1-8b-instant";
+export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "groq/compound";
+export const FAST_MODEL = process.env.GROQ_FAST_MODEL ?? "groq/compound-mini";
 
 // ── Correction prompt builder ─────────────────────────────────────────────────
 
