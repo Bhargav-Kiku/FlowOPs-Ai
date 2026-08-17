@@ -115,7 +115,7 @@ export async function callGroq<T>(options: CallGroqOptions<T>): Promise<CallGroq
             temperature,
             max_tokens: 1024,
           }),
-          timeoutPromise(10_000),
+          timeoutPromise(30_000),
         ]);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

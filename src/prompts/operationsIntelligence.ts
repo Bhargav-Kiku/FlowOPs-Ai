@@ -32,6 +32,7 @@ Identify specific problems found in the data. Each issue must have:
 
 ## Recommendations
 Provide 3-7 actionable, specific recommendations (not generic advice). Each recommendation should be a concrete action ServiceNow or hotel management can take.
+CRITICAL: You MUST ALWAYS provide at least one recommendation, even if the health score is 100 and there are no issues. For example, you can recommend "Continue monitoring current metrics" or "Maintain current strategies". DO NOT return an empty recommendations array.
 
 ## Output Format
 Return ONLY a valid JSON object with this exact structure:
