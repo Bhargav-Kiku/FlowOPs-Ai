@@ -45,8 +45,8 @@ export function _resetClientForTesting(): void {
 
 // ── Model selection ───────────────────────────────────────────────────────────
 
-export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "groq/compound";
-export const FAST_MODEL = process.env.GROQ_FAST_MODEL ?? "groq/compound-mini";
+export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "allam-2-7b";
+export const FAST_MODEL = process.env.GROQ_FAST_MODEL ?? "allam-2-7b";
 
 // ── Correction prompt builder ─────────────────────────────────────────────────
 
@@ -104,7 +104,7 @@ export async function callGroq<T>(options: CallGroqOptions<T>): Promise<CallGroq
   let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
   const fetchWithRetries = async (messages: any[], temperature: number) => {
-    const maxRetries = 2;
+    const maxRetries = 4;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await Promise.race([
@@ -120,8 +120,18 @@ export async function callGroq<T>(options: CallGroqOptions<T>): Promise<CallGroq
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if ((message.includes("429") || message.includes("503") || message.includes("rate limit") || message.includes("rate_limit")) && attempt < maxRetries) {
-          logger.warn({ requestId, endpoint, model, attempt: attempt + 1 }, "Rate limited, retrying AI call...");
-          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+          
+          let delayMs = 1000 * Math.pow(2, attempt); // default exponential backoff
+          const match = message.match(/Please try again in ([\d.]+)(m?s)/);
+          if (match) {
+            const amount = parseFloat(match[1]);
+            delayMs = match[2] === "s" ? amount * 1000 : amount;
+          }
+          // Add jitter to prevent thundering herd
+          delayMs += Math.random() * 500 + 100;
+          
+          logger.warn({ requestId, endpoint, model, attempt: attempt + 1, delayMs: Math.round(delayMs) }, "Rate limited, retrying AI call...");
+          await new Promise(r => setTimeout(r, delayMs));
           continue;
         }
         throw err;
