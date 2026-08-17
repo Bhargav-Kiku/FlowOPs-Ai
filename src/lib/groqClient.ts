@@ -103,20 +103,41 @@ export async function callGroq<T>(options: CallGroqOptions<T>): Promise<CallGroq
   let rawContent: string;
   let usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
+  const fetchWithRetries = async (messages: any[], temperature: number) => {
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await Promise.race([
+          client.chat.completions.create({
+            model,
+            messages,
+            response_format: { type: "json_object" },
+            temperature,
+            max_tokens: 1024,
+          }),
+          timeoutPromise(10_000),
+        ]);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if ((message.includes("429") || message.includes("503") || message.includes("rate limit") || message.includes("rate_limit")) && attempt < maxRetries) {
+          logger.warn({ requestId, endpoint, model, attempt: attempt + 1 }, "Rate limited, retrying AI call...");
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error("Max API retries exceeded");
+  };
+
   try {
-    const completion = await Promise.race([
-      client.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.2,
-        max_tokens: 1024,
-      }),
-      timeoutPromise(10_000),
-    ]);
+    const completion = await fetchWithRetries(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
+      0.2
+    );
 
     rawContent = completion.choices[0]?.message?.content ?? "";
     usage = {
@@ -146,21 +167,15 @@ export async function callGroq<T>(options: CallGroqOptions<T>): Promise<CallGroq
   const correctionContent = buildCorrectionPrompt(schema, lastError);
 
   try {
-    const retryCompletion = await Promise.race([
-      client.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
-          { role: "assistant", content: rawContent },
-          { role: "user", content: correctionContent },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.1,
-        max_tokens: 1024,
-      }),
-      timeoutPromise(10_000),
-    ]);
+    const retryCompletion = await fetchWithRetries(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+        { role: "assistant", content: rawContent },
+        { role: "user", content: correctionContent },
+      ],
+      0.1
+    );
 
     const retryContent = retryCompletion.choices[0]?.message?.content ?? "";
     const retryUsage = {
