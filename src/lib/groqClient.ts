@@ -45,8 +45,8 @@ export function _resetClientForTesting(): void {
 
 // ── Model selection ───────────────────────────────────────────────────────────
 
-export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "allam-2-7b";
-export const FAST_MODEL = process.env.GROQ_FAST_MODEL ?? "allam-2-7b";
+export const DEFAULT_MODEL = process.env.GROQ_MODEL ?? "qwen/qwen3.6-27b";
+export const FAST_MODEL = process.env.GROQ_FAST_MODEL ?? "qwen/qwen3.6-27b";
 
 // ── Correction prompt builder ─────────────────────────────────────────────────
 
@@ -111,7 +111,6 @@ export async function callGroq<T>(options: CallGroqOptions<T>): Promise<CallGroq
           client.chat.completions.create({
             model,
             messages,
-            response_format: { type: "json_object" },
             temperature,
             max_tokens: 1024,
           }),
@@ -221,7 +220,11 @@ function tryParseAndValidate<T>(raw: string, schema: ZodSchema<T>): ParseResult<
   let parsed: unknown;
 
   try {
-    parsed = JSON.parse(raw);
+    const cleanRaw = raw.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+    const start = cleanRaw.indexOf('{');
+    const end = cleanRaw.lastIndexOf('}');
+    const extracted = (start !== -1 && end !== -1 && end >= start) ? cleanRaw.substring(start, end + 1) : cleanRaw;
+    parsed = JSON.parse(extracted);
   } catch (err) {
     return { success: false, error: `JSON parse error: ${err instanceof Error ? err.message : String(err)}` };
   }

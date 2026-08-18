@@ -62,7 +62,7 @@ describe("POST /api/v1/summary", () => {
       .send(VALID_INPUT);
 
     expect(res.status).toBe(200);
-    expect(res.body._meta.model).toBe(process.env.GROQ_FAST_MODEL ?? "allam-2-7b");
+    expect(res.body._meta.model).toBe(process.env.GROQ_FAST_MODEL ?? "qwen/qwen3.6-27b");
   });
 
   test("accepts various context shapes (flexible input)", async () => {
