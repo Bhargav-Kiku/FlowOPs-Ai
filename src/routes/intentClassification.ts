@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { callGroq } from "../lib/groqClient";
+import { callGemini } from "../lib/geminiClient";
 import { applyResponseGuard } from "../lib/responseGuard";
 import { asyncRoute } from "../lib/asyncRoute";
 import { buildIntentClassificationSystemPrompt } from "../prompts/intentClassification";
@@ -28,8 +28,8 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
   const userContent = JSON.stringify({ request, property, room });
   const systemPrompt = buildIntentClassificationSystemPrompt(departments);
 
-  // ── Groq call ──────────────────────────────────────────────────────────────
-  const { data, usage, model, retried } = await callGroq({
+  // ── Gemini call ────────────────────────────────────────────────────────────
+  const { data, usage, model, retried } = await callGemini({
     systemPrompt,
     userContent,
     schema: IntentClassificationOutputSchema,

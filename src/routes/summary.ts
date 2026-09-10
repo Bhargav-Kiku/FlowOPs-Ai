@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { callGroq, FAST_MODEL } from "../lib/groqClient";
+import { callGemini, FAST_MODEL } from "../lib/geminiClient";
 import { applyResponseGuard } from "../lib/responseGuard";
 import { asyncRoute } from "../lib/asyncRoute";
 import { summarySystemPrompt } from "../prompts/summary";
@@ -20,8 +20,8 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  // ── Groq call (uses smaller/faster model for low latency) ─────────────────
-  const { data, usage, model, retried } = await callGroq({
+  // ── Gemini call (uses fast model for low latency) ─────────────────────────
+  const { data, usage, model, retried } = await callGemini({
     systemPrompt: summarySystemPrompt,
     userContent: JSON.stringify(inputParse.data.context),
     schema: SummaryOutputSchema,

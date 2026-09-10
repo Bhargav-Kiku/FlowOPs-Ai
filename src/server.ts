@@ -3,7 +3,7 @@ import express, { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import { httpLogger, logger } from "./lib/logger";
 import { authMiddleware } from "./lib/auth";
-import { InvalidAIOutputError, AIUnavailableError } from "./lib/groqClient";
+import { InvalidAIOutputError, AIUnavailableError } from "./lib/geminiClient";
 import { ZodError } from "zod";
 
 // ── Route imports ──────────────────────────────────────────────────────────────

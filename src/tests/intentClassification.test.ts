@@ -2,21 +2,24 @@ import "./testSetup";
 import request from "supertest";
 import { AUTH_HEADER } from "./testSetup";
 
-// groq-sdk is CommonJS â€” mock returns the constructor directly (no .default wrapper)
 const mockCreate = jest.fn();
-jest.mock("groq-sdk", () =>
-  jest.fn().mockImplementation(() => ({
-    chat: { completions: { create: mockCreate } },
-  }))
-);
+jest.mock("@google/generative-ai", () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: mockCreate,
+    }),
+  })),
+}));
 
 import app from "../server";
-import { _resetClientForTesting } from "../lib/groqClient";
+import { _resetClientForTesting } from "../lib/geminiClient";
 
 function mockGroqResponse(content: unknown) {
   return {
-    choices: [{ message: { content: JSON.stringify(content) } }],
-    usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+    response: {
+      text: () => (typeof content === "string" ? content : JSON.stringify(content)),
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 },
+    },
   };
 }
 
@@ -139,8 +142,8 @@ describe("POST /api/v1/intent-classification", () => {
 
   test("retries and returns 422 if AI output is invalid JSON after both attempts", async () => {
     mockCreate
-      .mockResolvedValueOnce({ choices: [{ message: { content: "not json at all" } }], usage: {} })
-      .mockResolvedValueOnce({ choices: [{ message: { content: "still not json" } }], usage: {} });
+      .mockResolvedValueOnce(mockGroqResponse("not json at all"))
+      .mockResolvedValueOnce(mockGroqResponse("still not json"));
 
     const res = await request(app)
       .post("/api/v1/intent-classification")

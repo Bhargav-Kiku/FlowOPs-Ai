@@ -3,19 +3,23 @@ import request from "supertest";
 import { AUTH_HEADER } from "./testSetup";
 
 const mockCreate = jest.fn();
-jest.mock("groq-sdk", () =>
-  jest.fn().mockImplementation(() => ({
-    chat: { completions: { create: mockCreate } },
-  }))
-);
+jest.mock("@google/generative-ai", () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: mockCreate,
+    }),
+  })),
+}));
 
 import app from "../server";
-import { _resetClientForTesting } from "../lib/groqClient";
+import { _resetClientForTesting } from "../lib/geminiClient";
 
-function mockGroqResponse(content: unknown) {
+function mockGeminiResponse(content: unknown) {
   return {
-    choices: [{ message: { content: JSON.stringify(content) } }],
-    usage: { prompt_tokens: 70, completion_tokens: 30, total_tokens: 100 },
+    response: {
+      text: () => (typeof content === "string" ? content : JSON.stringify(content)),
+      usageMetadata: { promptTokenCount: 70, candidatesTokenCount: 30, totalTokenCount: 100 },
+    },
   };
 }
 
@@ -44,7 +48,7 @@ describe("POST /api/v1/vendor-recommendation", () => {
   });
 
   test("returns 200 with valid recommendation", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockCreate.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/vendor-recommendation")
@@ -60,7 +64,7 @@ describe("POST /api/v1/vendor-recommendation", () => {
 
   test("returns 422 when AI returns a vendor_id not in the input list", async () => {
     mockCreate.mockResolvedValueOnce(
-      mockGroqResponse({ recommended_index: 99, reason: "Hallucinated vendor", confidence: 0.9 })
+      mockGeminiResponse({ recommended_index: 99, reason: "Hallucinated vendor", confidence: 0.9 })
     );
 
     const res = await request(app)
@@ -101,8 +105,8 @@ describe("POST /api/v1/vendor-recommendation", () => {
 
   test("returns 422 if AI output is malformed after retry", async () => {
     mockCreate
-      .mockResolvedValueOnce({ choices: [{ message: { content: "not json" } }], usage: {} })
-      .mockResolvedValueOnce({ choices: [{ message: { content: "still not json" } }], usage: {} });
+      .mockResolvedValueOnce(mockGeminiResponse("not json"))
+      .mockResolvedValueOnce(mockGeminiResponse("still not json"));
 
     const res = await request(app)
       .post("/api/v1/vendor-recommendation")
@@ -113,7 +117,7 @@ describe("POST /api/v1/vendor-recommendation", () => {
   });
 
   test("always injects ai_role: recommendation_only", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockCreate.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/vendor-recommendation")

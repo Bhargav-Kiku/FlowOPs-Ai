@@ -7,6 +7,7 @@ import "dotenv/config";
 // Ensure required env vars are set before app loads
 process.env.FLOWOPS_API_KEY = "test-api-key-12345";
 process.env.GROQ_API_KEY = "test-groq-key";
+process.env.GEMINI_API_KEY = "test-gemini-key";
 process.env.NODE_ENV = "test";
 process.env.LOG_LEVEL = "silent";
 

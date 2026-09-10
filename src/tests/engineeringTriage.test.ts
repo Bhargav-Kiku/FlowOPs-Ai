@@ -2,20 +2,24 @@ import "./testSetup";
 import request from "supertest";
 import { AUTH_HEADER } from "./testSetup";
 
-const mockCreate = jest.fn();
-jest.mock("groq-sdk", () =>
-  jest.fn().mockImplementation(() => ({
-    chat: { completions: { create: mockCreate } },
-  }))
-);
+const mockGenerateContent = jest.fn();
+jest.mock("@google/generative-ai", () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: mockGenerateContent,
+    }),
+  })),
+}));
 
 import app from "../server";
-import { _resetClientForTesting } from "../lib/groqClient";
+import { _resetClientForTesting } from "../lib/geminiClient";
 
-function mockGroqResponse(content: unknown) {
+function mockGeminiResponse(content: unknown) {
   return {
-    choices: [{ message: { content: JSON.stringify(content) } }],
-    usage: { prompt_tokens: 90, completion_tokens: 45, total_tokens: 135 },
+    response: {
+      text: () => (typeof content === "string" ? content : JSON.stringify(content)),
+      usageMetadata: { promptTokenCount: 90, candidatesTokenCount: 45, totalTokenCount: 135 },
+    },
   };
 }
 
@@ -41,12 +45,12 @@ const VALID_AI_OUTPUT = {
 
 describe("POST /api/v1/engineering-triage", () => {
   beforeEach(() => {
-    mockCreate.mockReset();
+    mockGenerateContent.mockReset();
     _resetClientForTesting();
   });
 
   test("returns 200 with valid triage for valid input", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockGenerateContent.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/engineering-triage")
@@ -64,7 +68,7 @@ describe("POST /api/v1/engineering-triage", () => {
   });
 
   test("works with minimal input (only required fields)", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockGenerateContent.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/engineering-triage")
@@ -94,9 +98,9 @@ describe("POST /api/v1/engineering-triage", () => {
 
   test("returns 422 if AI returns invalid routing_decision enum after retry", async () => {
     const badOutput = { ...VALID_AI_OUTPUT, routing_decision: "unknown_route" };
-    mockCreate
-      .mockResolvedValueOnce(mockGroqResponse(badOutput))
-      .mockResolvedValueOnce(mockGroqResponse(badOutput));
+    mockGenerateContent
+      .mockResolvedValueOnce(mockGeminiResponse(badOutput))
+      .mockResolvedValueOnce(mockGeminiResponse(badOutput));
 
     const res = await request(app)
       .post("/api/v1/engineering-triage")
@@ -108,7 +112,7 @@ describe("POST /api/v1/engineering-triage", () => {
 
   test("strips sys_id from AI output", async () => {
     const outputWithSysId = { ...VALID_AI_OUTPUT, sys_id: "aaaaabbbbccccdddd0000111122223333" };
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(outputWithSysId));
+    mockGenerateContent.mockResolvedValueOnce(mockGeminiResponse(outputWithSysId));
 
     const res = await request(app)
       .post("/api/v1/engineering-triage")
@@ -120,7 +124,7 @@ describe("POST /api/v1/engineering-triage", () => {
   });
 
   test("always injects ai_role: recommendation_only", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockGenerateContent.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/engineering-triage")

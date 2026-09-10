@@ -2,20 +2,24 @@ import "./testSetup";
 import request from "supertest";
 import { AUTH_HEADER } from "./testSetup";
 
-const mockCreate = jest.fn();
-jest.mock("groq-sdk", () =>
-  jest.fn().mockImplementation(() => ({
-    chat: { completions: { create: mockCreate } },
-  }))
-);
+const mockGenerateContent = jest.fn();
+jest.mock("@google/generative-ai", () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: mockGenerateContent,
+    }),
+  })),
+}));
 
 import app from "../server";
-import { _resetClientForTesting } from "../lib/groqClient";
+import { _resetClientForTesting } from "../lib/geminiClient";
 
-function mockGroqResponse(content: unknown) {
+function mockGeminiResponse(content: unknown) {
   return {
-    choices: [{ message: { content: JSON.stringify(content) } }],
-    usage: { prompt_tokens: 80, completion_tokens: 40, total_tokens: 120 },
+    response: {
+      text: () => (typeof content === "string" ? content : JSON.stringify(content)),
+      usageMetadata: { promptTokenCount: 80, candidatesTokenCount: 40, totalTokenCount: 120 },
+    },
   };
 }
 
@@ -33,13 +37,13 @@ const VALID_INPUT = {
 
 describe("POST /api/v1/housekeeping-assign", () => {
   beforeEach(() => {
-    mockCreate.mockReset();
+    mockGenerateContent.mockReset();
     _resetClientForTesting();
   });
 
   test("returns 200 with valid assignment when AI picks a valid on-shift candidate", async () => {
-    mockCreate.mockResolvedValueOnce(
-      mockGroqResponse({ recommended_index: 0, reason: "Alice is on shift with required skill", confidence: 0.95 })
+    mockGenerateContent.mockResolvedValueOnce(
+      mockGeminiResponse({ recommended_index: 0, reason: "Alice is on shift with required skill", confidence: 0.95 })
     );
 
     const res = await request(app)
@@ -53,8 +57,8 @@ describe("POST /api/v1/housekeeping-assign", () => {
   });
 
   test("overrides AI pick to -1 when AI recommends an off-shift staff member", async () => {
-    mockCreate.mockResolvedValueOnce(
-      mockGroqResponse({ recommended_index: 1, reason: "Bob has lowest workload", confidence: 0.7 })
+    mockGenerateContent.mockResolvedValueOnce(
+      mockGeminiResponse({ recommended_index: 1, reason: "Bob has lowest workload", confidence: 0.7 })
     );
 
     const res = await request(app)
@@ -69,8 +73,8 @@ describe("POST /api/v1/housekeeping-assign", () => {
   });
 
   test("returns 422 when AI returns null (violates non-nullable schema)", async () => {
-    mockCreate.mockResolvedValue(
-      mockGroqResponse({ recommended_index: null, reason: "No on-shift staff with required skill", confidence: 0 })
+    mockGenerateContent.mockResolvedValue(
+      mockGeminiResponse({ recommended_index: null, reason: "No on-shift staff with required skill", confidence: 0 })
     );
 
     const res = await request(app)
@@ -82,8 +86,8 @@ describe("POST /api/v1/housekeeping-assign", () => {
   });
 
   test("overrides to -1 when AI returns an index not in candidates list", async () => {
-    mockCreate.mockResolvedValueOnce(
-      mockGroqResponse({ recommended_index: 99, reason: "Hallucinated staff", confidence: 0.9 })
+    mockGenerateContent.mockResolvedValueOnce(
+      mockGeminiResponse({ recommended_index: 99, reason: "Hallucinated staff", confidence: 0.9 })
     );
 
     const res = await request(app)
@@ -114,9 +118,9 @@ describe("POST /api/v1/housekeeping-assign", () => {
   });
 
   test("returns 422 if AI output is malformed after retry", async () => {
-    mockCreate
-      .mockResolvedValueOnce({ choices: [{ message: { content: "bad json" } }], usage: {} })
-      .mockResolvedValueOnce({ choices: [{ message: { content: "still bad" } }], usage: {} });
+    mockGenerateContent
+      .mockResolvedValueOnce(mockGeminiResponse("bad json"))
+      .mockResolvedValueOnce(mockGeminiResponse("still bad"));
 
     const res = await request(app)
       .post("/api/v1/housekeeping-assign")
@@ -127,8 +131,8 @@ describe("POST /api/v1/housekeeping-assign", () => {
   });
 
   test("always injects ai_role: recommendation_only", async () => {
-    mockCreate.mockResolvedValueOnce(
-      mockGroqResponse({ recommended_index: 0, reason: "Best match", confidence: 0.9 })
+    mockGenerateContent.mockResolvedValueOnce(
+      mockGeminiResponse({ recommended_index: 0, reason: "Best match", confidence: 0.9 })
     );
 
     const res = await request(app)

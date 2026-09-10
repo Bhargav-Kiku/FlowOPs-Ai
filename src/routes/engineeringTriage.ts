@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { callGroq } from "../lib/groqClient";
+import { callGemini } from "../lib/geminiClient";
 import { applyResponseGuard } from "../lib/responseGuard";
 import { asyncRoute } from "../lib/asyncRoute";
 import { engineeringTriageSystemPrompt } from "../prompts/engineeringTriage";
@@ -23,8 +23,8 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  // ── Groq call ──────────────────────────────────────────────────────────────
-  const { data, usage, model, retried } = await callGroq({
+  // ── Gemini call ────────────────────────────────────────────────────────────
+  const { data, usage, model, retried } = await callGemini({
     systemPrompt: engineeringTriageSystemPrompt,
     userContent: JSON.stringify(inputParse.data),
     schema: EngineeringTriageOutputSchema,

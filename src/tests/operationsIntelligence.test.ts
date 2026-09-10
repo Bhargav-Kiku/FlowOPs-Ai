@@ -3,19 +3,23 @@ import request from "supertest";
 import { AUTH_HEADER } from "./testSetup";
 
 const mockCreate = jest.fn();
-jest.mock("groq-sdk", () =>
-  jest.fn().mockImplementation(() => ({
-    chat: { completions: { create: mockCreate } },
-  }))
-);
+jest.mock("@google/generative-ai", () => ({
+  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
+    getGenerativeModel: jest.fn().mockReturnValue({
+      generateContent: mockCreate,
+    }),
+  })),
+}));
 
 import app from "../server";
-import { _resetClientForTesting } from "../lib/groqClient";
+import { _resetClientForTesting } from "../lib/geminiClient";
 
-function mockGroqResponse(content: unknown) {
+function mockGeminiResponse(content: unknown) {
   return {
-    choices: [{ message: { content: JSON.stringify(content) } }],
-    usage: { prompt_tokens: 150, completion_tokens: 80, total_tokens: 230 },
+    response: {
+      text: () => (typeof content === "string" ? content : JSON.stringify(content)),
+      usageMetadata: { promptTokenCount: 150, candidatesTokenCount: 80, totalTokenCount: 230 },
+    },
   };
 }
 
@@ -52,7 +56,7 @@ describe("POST /api/v1/operations-intelligence", () => {
   });
 
   test("returns 200 with valid health assessment", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockCreate.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/operations-intelligence")
@@ -88,8 +92,8 @@ describe("POST /api/v1/operations-intelligence", () => {
   test("returns 422 if health_score is out of range after retry", async () => {
     const badOutput = { ...VALID_AI_OUTPUT, health_score: 150 };
     mockCreate
-      .mockResolvedValueOnce(mockGroqResponse(badOutput))
-      .mockResolvedValueOnce(mockGroqResponse(badOutput));
+      .mockResolvedValueOnce(mockGeminiResponse(badOutput))
+      .mockResolvedValueOnce(mockGeminiResponse(badOutput));
 
     const res = await request(app)
       .post("/api/v1/operations-intelligence")
@@ -104,7 +108,7 @@ describe("POST /api/v1/operations-intelligence", () => {
       ...VALID_AI_OUTPUT,
       issues: [{ category: "Test", severity: "low", finding: "test", sys_id: "abc123" }],
     };
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(outputWithNestedSysId));
+    mockCreate.mockResolvedValueOnce(mockGeminiResponse(outputWithNestedSysId));
 
     const res = await request(app)
       .post("/api/v1/operations-intelligence")
@@ -116,7 +120,7 @@ describe("POST /api/v1/operations-intelligence", () => {
   });
 
   test("always injects ai_role: recommendation_only", async () => {
-    mockCreate.mockResolvedValueOnce(mockGroqResponse(VALID_AI_OUTPUT));
+    mockCreate.mockResolvedValueOnce(mockGeminiResponse(VALID_AI_OUTPUT));
 
     const res = await request(app)
       .post("/api/v1/operations-intelligence")

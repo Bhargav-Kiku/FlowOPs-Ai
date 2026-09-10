@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { callGroq } from "../lib/groqClient";
+import { callGemini } from "../lib/geminiClient";
 import { applyResponseGuard } from "../lib/responseGuard";
 import { asyncRoute } from "../lib/asyncRoute";
 import { buildEmailBodySystemPrompt } from "../prompts/generateEmailBody";
@@ -24,7 +24,7 @@ router.post("/", asyncRoute(async (req: Request, res: Response): Promise<void> =
 
   const input = inputParse.data;
 
-  const { data, usage, model, retried } = await callGroq({
+  const { data, usage, model, retried } = await callGemini({
     systemPrompt: buildEmailBodySystemPrompt(input.stage, input.sentiment, input.assignment_type, input.assigned_name),
     userContent: JSON.stringify({ request_text: input.request_text }),
     schema: GenerateEmailBodyOutputSchema,
